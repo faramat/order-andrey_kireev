@@ -35,3 +35,13 @@ inline_user_keyboard_forgot_name.row(button_forgot_name)
 inline_user_keyboard_forgot_patronymic = InlineKeyboardMarkup()
 button_forgot_patronymic = InlineKeyboardButton('Не знаю/Не помню отчество', callback_data='forgot_patronymic')
 inline_user_keyboard_forgot_patronymic.row(button_forgot_patronymic)
+#Инлайн клавиатура поиск по подразделению
+def units(response):
+    inline_user_keyboard_search_unit = InlineKeyboardMarkup()
+    for i in range (len(response)):
+        print(response[i][1])
+        button_unit = InlineKeyboardButton(f'{response[i][1]}', callback_data='test')
+        inline_user_keyboard_search_unit.row(button_unit)
+    button_next = InlineKeyboardButton('Далее', callback_data='test')
+    inline_user_keyboard_search_unit.row(button_next)
+    return inline_user_keyboard_search_unit

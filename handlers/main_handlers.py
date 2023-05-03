@@ -91,15 +91,19 @@ async def forgot_patronymic(query: types.CallbackQuery,state: FSMContext):
     data = await state.get_data()
     await state.finish()
     await query.message.delete()
-    response = main_requests.search_employee(data)
-    await query.message.answer(response,reply_markup=user_kb.user_keyboard_contact)
+    await get_info(query.message,data)
+    
     
 async def search_patronymic(message: types.Message, state: FSMContext):
     await state.update_data(patronymic=message.text)
     data = await state.get_data()
     await state.finish()
+    await get_info(message,data)
+
+async def get_info(message: types.Message,data):
     response = main_requests.search_employee(data)
-    await message.answer(f'''
+    if response:
+        await message.answer(f'''
 ФИО: {response[0]} {response[1]} {response[2]} \n
 Подразделение: {response[9]} \n
 Отдел: {response[10]} \n
@@ -111,7 +115,38 @@ async def search_patronymic(message: types.Message, state: FSMContext):
 Кабинет: {response[4]} \n 
 Адрес: {response[8]} \n
     ''',reply_markup=user_kb.user_keyboard_contact)
+    else:
+        await message.answer('Сотрудник не найден!',reply_markup=user_kb.user_keyboard_contact)
+# Поиск по подразделению
+async def search_unit(message: types.Message):
+    await message.answer('Выберите подразделение, в котором хотите найти сотрудника:') 
+    response = main_requests.search_unit()
+    count_units = len(response)
+    
+    units = {
+        'unit1':'',
+        'unit2':'',
+        'unit3':'',
+        'unit4':'',
+        'unit5':'',
+        'unit6':''
+    }
+    for i in range(count_units):
+        if i == 7:
+            count_units-=6
+            
+        else:
+            units[f'unit{i}'] = response[i][1]
 
+    await message.answer(f'''
+Подразделения:
+1. {units['unit1']}
+2. {units['unit2']}
+3. {units['unit3']}
+4. {units['unit4']}
+5. {units['unit5']}
+6. {units['unit6']}
+    ''')
     
 
 
@@ -120,8 +155,6 @@ async def search_patronymic(message: types.Message, state: FSMContext):
 
 
 
-async def search_unit(message: types.Message):
-    await message.answer('done') 
 
 async def search_email(message: types.Message):
     await message.answer('done') 
@@ -137,6 +170,7 @@ def register_handlers_main(dp: Dispatcher):
     dp.register_callback_query_handler(create_program,text = "create_program")
 
     dp.register_message_handler(contact_info,text = "Контактная информация")
+
     dp.register_message_handler(search_fio,text = "Поиск по ФИО",state=None)
     dp.register_message_handler(search_surname,state=fsmSearchFio.surname)
     dp.register_message_handler(search_name,state=fsmSearchFio.name)
@@ -144,6 +178,11 @@ def register_handlers_main(dp: Dispatcher):
     dp.register_callback_query_handler(forgot_surname,text = "forgot_surname",state=fsmSearchFio.surname)
     dp.register_callback_query_handler(forgot_name,text = "forgot_name",state=fsmSearchFio.name)
     dp.register_callback_query_handler(forgot_patronymic,text = "forgot_patronymic",state=fsmSearchFio.patronymic)
+
     dp.register_message_handler(search_unit,text = "Поиск по подразделению")
+
+
+
+
     dp.register_message_handler(search_email,text = "Поиск по почте")
     dp.register_message_handler(back,text = "Вернуться в главное меню")
