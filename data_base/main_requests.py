@@ -153,6 +153,18 @@ def search_name(data):
     return(response)
 # Поиск в бд сотрудника
 def search_employee(data):
+    if 'mail'in data:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE name_mail = '{data['mail']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info(response)
+            except:
+                return False 
     if data['surname'] and data['name'] and data['patronymic']: #111
         with connection.cursor() as cursor:
             cursor.execute(
@@ -266,40 +278,43 @@ def get_info(response):
         'id_unit': '', 
         'id_department': '', 
     }
-    with connection.cursor() as cursor:
-        info['id_employee'] = response[0]
-        info['mail'] = response[1]
-        info['id_phone'] = response[2]
-        info['id_room'] = response[3]
-        
-        cursor.execute(
-            f'''
-            SELECT position.id_position,unit.id_unit,department.id_department FROM employee_info JOIN position ON 
-            position.id_position=employee_info.id_position AND employee_info.id_employee = {info['id_employee']} JOIN unit ON 
-            unit.id_unit=employee_info.id_unit AND employee_info.id_employee = {info['id_employee']} JOIN department ON 
-            department.id_department=employee_info.id_department AND employee_info.id_employee = {info['id_employee']};
-            '''
-        )
-        response = cursor.fetchall()[0]
-        info['id_position'] = response[0]
-        info['id_unit'] = response[1]
-        info['id_department'] = response[2]
-        cursor.execute(
-            f'''
-            SELECT employee.last_name,employee.first_name,employee.patronymic,employee.name_mail,room.number_room,
-            phone.number_phone,phone.ext_phone,building.name_building,building.adress,unit.name_unit,department.name_department,
-            position.name_position FROM employee JOIN phone ON employee.id_phone=phone.id_phone AND employee.id_employee = 
-            {info['id_employee']} JOIN room ON employee.id_room=room.id_room AND room.id_room = {info['id_room']} 
-            JOIN building ON room.id_room = building.id_building AND room.id_room = {info['id_room']} JOIN unit ON room.id_room 
-            = unit.id_unit AND room.id_room = {info['id_room']} JOIN department ON unit.id_unit = department.id_unit AND 
-            unit.id_unit = {info['id_unit']} JOIN employee_info ON employee.id_employee = employee_info.id_employee AND 
-            employee.id_employee = {info['id_employee']} JOIN position ON position.id_position = employee_info.id_position 
-            AND employee.id_employee = {info['id_employee']};
-            '''
-        )
-        response = cursor.fetchall()[0]
-    return(response)
-
+    try:
+        with connection.cursor() as cursor:
+            info['id_employee'] = response[0]
+            info['mail'] = response[1]
+            info['id_phone'] = response[2]
+            info['id_room'] = response[3]
+            cursor.execute(
+                f'''
+                SELECT position.id_position,unit.id_unit,department.id_department FROM employee_info JOIN position ON 
+                position.id_position=employee_info.id_position AND employee_info.id_employee = {info['id_employee']} JOIN unit ON 
+                unit.id_unit=employee_info.id_unit AND employee_info.id_employee = {info['id_employee']} JOIN department ON 
+                department.id_department=employee_info.id_department AND employee_info.id_employee = {info['id_employee']};
+                '''
+            )
+            response = cursor.fetchall()[0]
+            
+            info['id_position'] = response[0]
+            info['id_unit'] = response[1]
+            info['id_department'] = response[2]
+            
+            cursor.execute(
+                f'''
+                SELECT employee.last_name,employee.first_name,employee.patronymic,employee.name_mail,room.number_room,
+                phone.number_phone,phone.ext_phone,building.name_building,building.adress,unit.name_unit,department.name_department,
+                position.name_position FROM employee JOIN phone ON employee.id_phone=phone.id_phone AND employee.id_employee = 
+                {info['id_employee']} JOIN room ON employee.id_room=room.id_room AND room.id_room = {info['id_room']} 
+                JOIN building ON room.id_room = building.id_building AND room.id_room = {info['id_room']} JOIN unit ON room.id_room 
+                = unit.id_unit AND room.id_room = {info['id_room']} JOIN department ON unit.id_unit = department.id_unit AND 
+                unit.id_unit = {info['id_unit']} JOIN employee_info ON employee.id_employee = employee_info.id_employee AND 
+                employee.id_employee = {info['id_employee']} JOIN position ON position.id_position = employee_info.id_position 
+                AND employee.id_employee = {info['id_employee']};
+                '''
+            )
+            response = cursor.fetchall()[0]
+        return(response)
+    except Exception as ex:
+        print(ex)
 def search_unit():
     with connection.cursor() as cursor:
         cursor.execute(
@@ -308,4 +323,154 @@ def search_unit():
             '''
         )
         response = cursor.fetchall()
+    return(response)
+
+def search_unit_id(id):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'''
+            SELECT * FROM department WHERE id_unit = {id};
+            '''
+        )
+        response = cursor.fetchall()
+    return(response)
+
+def search_department():
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'''
+            SELECT * FROM department;
+            '''
+        )
+        response = cursor.fetchall()
+    return(response)
+
+def search_employee_unit(data):
+    if data['surname'] and data['name'] and data['patronymic']: #111
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE last_name = 
+                '{data['surname']}' AND first_name = '{data['name']}' AND patronymic = '{data['patronymic']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False 
+    elif data['surname'] and data['name'] and data['patronymic'] == None: #110
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE last_name = 
+                '{data['surname']}' AND first_name = '{data['name']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    elif data['surname'] and data['name'] == None and data['patronymic']: #101
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE last_name = 
+                '{data['surname']}' AND patronymic = '{data['patronymic']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    elif data['surname'] and data['name'] == None and data['patronymic'] == None: #100
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE last_name = 
+                '{data['surname']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    elif data['surname'] == None and data['name'] and data['patronymic']: #011
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE first_name = '{data['name']}' 
+                AND patronymic = '{data['patronymic']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    elif data['surname'] == None and data['name']  and data['patronymic'] == None: #010
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE first_name = '{data['name']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    elif data['surname'] == None and data['name'] == None and data['patronymic']: #001
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT id_employee,name_mail,id_phone,id_room FROM employee WHERE patronymic = '{data['patronymic']}';
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return get_info_unit(response,data)
+            except:
+                return False
+    else: 
+        return False
+
+def get_info_unit(response,data):
+    id_employee = response[0]
+    if data['department'] != False:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT * FROM employee_info WHERE id_employee = {id_employee} AND id_unit = {data['id_unit']} AND id_department = {data['id_department']};
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return response
+            except:
+                return False
+    else:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'''
+                SELECT * FROM employee_info WHERE id_employee = {id_employee} AND id_unit = {data['id_unit']};
+                '''
+            )
+            try:
+                response = cursor.fetchall()[0]
+                return response
+            except:
+                return False
+
+def search_email(data):
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'''
+            SELECT * FROM employee WHERE name_mail='{data['mail']}';
+            '''
+        )
+        response = cursor.fetchone()
     return(response)
